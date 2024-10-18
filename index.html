@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Falling Letters</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: black; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.14.2/matter.min.js"></script>
+    <script>
+        // Matter.js setup
+        var Engine = Matter.Engine,
+            Render = Matter.Render,
+            World = Matter.World,
+            Bodies = Matter.Bodies,
+            Mouse = Matter.Mouse,
+            MouseConstraint = Matter.MouseConstraint,
+            Events = Matter.Events;
+
+        var engine = Engine.create(),
+            world = engine.world;
+
+        var render = Render.create({
+            element: document.body,
+            engine: engine,
+            options: {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                wireframes: false,
+                background: 'black'
+            }
+        });
+
+        // Create static boundaries (walls)
+        var floor = Bodies.rectangle(window.innerWidth / 2, window.innerHeight, window.innerWidth, 50, { isStatic: true });
+        var ceiling = Bodies.rectangle(window.innerWidth / 2, 0, window.innerWidth, 50, { isStatic: true });
+        var leftWall = Bodies.rectangle(0, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
+        var rightWall = Bodies.rectangle(window.innerWidth, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
+
+        // Create random-sized letters as individual falling bodies
+        var letters = [];
+        var letterString = "Yolanda Polanco, DJ from Orlando, FL";
+
+        for (var i = 0; i < letterString.length; i++) {
+            var randomWidth = Math.floor(Math.random() * 30) + 20;
+            var randomHeight = Math.floor(Math.random() * 40) + 20;
+
+            var letter = Bodies.rectangle(Math.random() * window.innerWidth, Math.random() * 100, randomWidth, randomHeight, {
+                render: {
+                    fillStyle: 'white',
+                    text: {
+                        content: letterString[i],
+                        size: randomHeight * 0.8,
+                        color: 'white'
+                    }
+                }
+            });
+            letters.push(letter);
+        }
+
+        // Add all elements to the world
+        World.add(world, [floor, ceiling, leftWall, rightWall].concat(letters));
+
+        // Mouse interaction
+        var mouse = Mouse.create(render.canvas),
+            mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: {
+                        visible: false
+                    }
+                }
+            });
+
+        World.add(world, mouseConstraint);
+
+        // Make letters bounce on tap/click
+        Events.on(mouseConstraint, "mousedown", function(event) {
+            var mousePosition = event.mouse.position;
+            letters.forEach(function(letter) {
+                // Apply a random force to each letter when clicked
+                Matter.Body.applyForce(letter, mousePosition, {
+                    x: (Math.random() - 0.5) * 0.05,
+                    y: (Math.random() - 0.5) * 0.05
+                });
+            });
+        });
+
+        Engine.run(engine);
+        Render.run(render);
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            render.canvas.width = window.innerWidth;
+            render.canvas.height = window.innerHeight;
+            Render.lookAt(render, {
+                min: { x: 0, y: 0 },
+                max: { x: window.innerWidth, y: window.innerHeight }
+            });
+        });
+    </script>
+</body>
+</html>
